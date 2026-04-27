@@ -1,0 +1,587 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Synergy BD — Lead Qualifier</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --bg: #f7f6f3; --surface: #ffffff; --surface2: #f0ede8;
+    --border: rgba(0,0,0,0.1); --border-strong: rgba(0,0,0,0.18);
+    --text: #1a1a18; --text2: #6b6860; --text3: #9e9b94;
+    --green: #1a7a52; --green-bg: #e8f5ee;
+    --red: #b83232; --red-bg: #fbebeb;
+    --amber: #8a5c00; --amber-bg: #fdf3dc;
+    --blue: #1a4f8a; --blue-bg: #e8f0fb;
+    --purple: #4a3a8a; --purple-bg: #eeeafb;
+    --new: #0e6e4a; --new-bg: #d4f5e6;
+    --radius: 10px; --radius-sm: 6px;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #18181a; --surface: #232325; --surface2: #2c2c2f;
+      --border: rgba(255,255,255,0.08); --border-strong: rgba(255,255,255,0.14);
+      --text: #f0ede8; --text2: #a09d96; --text3: #6b6860;
+      --green: #4ecb8a; --green-bg: #0e2a1c;
+      --red: #e06060; --red-bg: #2a1010;
+      --amber: #f0c060; --amber-bg: #2a2010;
+      --blue: #6aabf0; --blue-bg: #101e2a;
+      --purple: #a090f0; --purple-bg: #1a1630;
+      --new: #4ecb8a; --new-bg: #0a2018;
+    }
+  }
+  body { font-family: -apple-system, 'Helvetica Neue', Arial, sans-serif; background: var(--bg); color: var(--text); font-size: 14px; line-height: 1.5; min-height: 100vh; }
+  header { background: var(--surface); border-bottom: 1px solid var(--border); padding: 0 24px; display: flex; align-items: center; justify-content: space-between; height: 56px; position: sticky; top: 0; z-index: 100; gap: 12px; }
+  .logo { font-size: 15px; font-weight: 600; letter-spacing: -0.02em; white-space: nowrap; }
+  .logo span { color: var(--text3); font-weight: 400; }
+  .header-right { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
+  .api-input { font-size: 12px; padding: 5px 10px; border: 1px solid var(--border-strong); border-radius: var(--radius-sm); background: var(--surface2); color: var(--text); width: 220px; }
+  .api-input::placeholder { color: var(--text3); }
+  main { max-width: 880px; margin: 0 auto; padding: 20px 16px 80px; }
+  .import-bar { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 12px 16px; margin-bottom: 16px; display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+  .import-bar label { font-size: 13px; color: var(--text2); white-space: nowrap; }
+  .import-info { font-size: 12px; color: var(--text3); }
+  .import-result { font-size: 12px; font-weight: 500; padding: 3px 8px; border-radius: 20px; display: none; }
+  .import-result.new { background: var(--new-bg); color: var(--new); }
+  .import-result.none { background: var(--surface2); color: var(--text3); }
+  .toolbar { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 16px; align-items: center; }
+  .toolbar input[type="text"], .toolbar select { font-size: 13px; padding: 7px 11px; border: 1px solid var(--border-strong); border-radius: var(--radius-sm); background: var(--surface); color: var(--text); outline: none; }
+  .toolbar input[type="text"] { width: 190px; }
+  .toolbar input:focus, .toolbar select:focus { border-color: var(--blue); }
+  .stats { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; margin-bottom: 20px; }
+  .stat { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 12px 14px; }
+  .stat-label { font-size: 11px; color: var(--text3); text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 3px; }
+  .stat-val { font-size: 24px; font-weight: 600; letter-spacing: -0.03em; }
+  .stat-val.highlight { color: var(--new); }
+  .section-label { font-size: 11px; font-weight: 600; color: var(--text3); text-transform: uppercase; letter-spacing: 0.07em; margin: 16px 0 7px; }
+  .lead-list { display: flex; flex-direction: column; gap: 7px; }
+  .card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 13px 15px; transition: border-color 0.15s; }
+  .card:hover { border-color: var(--border-strong); }
+  .card.chasing { border-left: 3px solid var(--green); }
+  .card.blocked { opacity: 0.35; border-left: 3px solid var(--red); }
+  .card-top { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; }
+  .card-company { font-size: 14px; font-weight: 600; letter-spacing: -0.01em; }
+  .card-role { font-size: 13px; color: var(--text2); margin-top: 1px; }
+  .card-actions { display: flex; gap: 5px; flex-shrink: 0; flex-wrap: wrap; justify-content: flex-end; }
+  .btn { font-size: 12px; font-weight: 500; padding: 5px 10px; border-radius: var(--radius-sm); border: 1px solid var(--border-strong); background: transparent; color: var(--text2); cursor: pointer; transition: all 0.12s; white-space: nowrap; }
+  .btn:hover { background: var(--surface2); color: var(--text); }
+  .btn:active { transform: scale(0.97); }
+  .btn-chase { border-color: var(--green); color: var(--green); background: var(--green-bg); }
+  .btn-block { border-color: var(--red); color: var(--red); }
+  .btn-block:hover { background: var(--red-bg); }
+  .btn-copy { border-color: var(--blue); color: var(--blue); font-size: 11px; padding: 3px 8px; }
+  .btn-copy:hover { background: var(--blue-bg); }
+  .card-meta { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 9px; }
+  .pill { font-size: 11px; font-weight: 500; padding: 2px 8px; border-radius: 20px; }
+  .pill-tech { background: var(--purple-bg); color: var(--purple); }
+  .pill-mkt  { background: var(--amber-bg); color: var(--amber); }
+  .pill-loc  { background: var(--blue-bg); color: var(--blue); }
+  .pill-sal  { background: var(--green-bg); color: var(--green); }
+  .pill-post { background: var(--surface2); color: var(--text3); }
+  .pill-blk  { background: var(--red-bg); color: var(--red); }
+  .pill-new  { background: var(--new-bg); color: var(--new); font-weight: 600; }
+  .card-contact { margin-top: 9px; padding-top: 9px; border-top: 1px solid var(--border); font-size: 12px; color: var(--text2); display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+  .card-contact a { color: var(--blue); text-decoration: none; }
+  .card-contact a:hover { text-decoration: underline; }
+  .contact-none { color: var(--text3); font-style: italic; }
+  .email-box { margin-top: 11px; border: 1px solid var(--border); border-radius: var(--radius-sm); overflow: hidden; }
+  .email-header { background: var(--surface2); padding: 7px 12px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border); }
+  .email-header-label { font-size: 11px; font-weight: 600; color: var(--text3); text-transform: uppercase; letter-spacing: 0.06em; }
+  .subject-options { padding: 7px 12px; background: var(--surface); border-bottom: 1px solid var(--border); }
+  .subject-options-label { font-size: 11px; color: var(--text3); margin-bottom: 4px; }
+  .subject-option { font-size: 12px; padding: 3px 8px; border-radius: var(--radius-sm); background: var(--surface2); color: var(--text2); display: inline-block; margin: 2px 4px 2px 0; border: 1px solid var(--border); }
+  .email-body-text { padding: 12px; font-size: 13px; color: var(--text); white-space: pre-wrap; line-height: 1.7; background: var(--surface); }
+  .email-generating { padding: 14px 12px; font-size: 13px; color: var(--text3); display: flex; align-items: center; gap: 8px; background: var(--surface); }
+  .spinner { width: 14px; height: 14px; border: 2px solid var(--border-strong); border-top-color: var(--blue); border-radius: 50%; animation: spin 0.7s linear infinite; flex-shrink: 0; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .empty { text-align: center; padding: 40px; color: var(--text3); font-size: 13px; }
+  .blocked-note { text-align: center; font-size: 12px; color: var(--text3); padding: 10px 0 0; }
+  .clear-btn { font-size: 12px; color: var(--red); background: none; border: none; cursor: pointer; padding: 2px 4px; }
+  .clear-btn:hover { text-decoration: underline; }
+  .db-bar { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 10px 16px; margin-bottom: 12px; display: flex; align-items: center; justify-content: space-between; font-size: 12px; color: var(--text3); }
+</style>
+</head>
+<body>
+<header>
+  <div class="logo">Synergy <span>/ BD</span></div>
+  <div class="header-right">
+    <input class="api-input" type="password" id="apiKey" placeholder="Anthropic API key…" />
+  </div>
+</header>
+
+<main>
+  <div class="import-bar">
+    <label>Import CSV:</label>
+    <input type="file" id="fileInput" accept=".csv" />
+    <span class="import-info">Upload daily — duplicates are skipped automatically</span>
+    <span class="import-result" id="importResult"></span>
+  </div>
+
+  <div class="db-bar">
+    <span id="dbInfo">No leads loaded yet</span>
+    <button class="clear-btn" onclick="clearAll()">Clear all data</button>
+  </div>
+
+  <div class="toolbar">
+    <input type="text" id="search" placeholder="Search company or role…" oninput="render()" />
+    <select id="filterStatus" onchange="render()">
+      <option value="all">All statuses</option>
+      <option value="new">New today</option>
+      <option value="review">Needs review</option>
+      <option value="chasing">Chasing</option>
+      <option value="blocked">Blocked</option>
+    </select>
+    <select id="filterCat" onchange="render()">
+      <option value="all">Tech + Marketing</option>
+      <option value="tech">Tech only</option>
+      <option value="marketing">Marketing only</option>
+    </select>
+  </div>
+
+  <div class="stats">
+    <div class="stat"><div class="stat-label">Total leads</div><div class="stat-val" id="sTotal">—</div></div>
+    <div class="stat"><div class="stat-label">New today</div><div class="stat-val highlight" id="sNew">—</div></div>
+    <div class="stat"><div class="stat-label">To review</div><div class="stat-val" id="sReview">—</div></div>
+    <div class="stat"><div class="stat-label">Chasing</div><div class="stat-val" id="sChase">—</div></div>
+    <div class="stat"><div class="stat-label">Blocked</div><div class="stat-val" id="sBlock">—</div></div>
+  </div>
+
+  <div id="leadList" class="lead-list"></div>
+</main>
+
+<script>
+// ── Auth guard ────────────────────────────────────────────────────────────────
+(async () => {
+  async function sha256(s) {
+    const b = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(s));
+    return Array.from(new Uint8Array(b)).map(x => x.toString(16).padStart(2,'0')).join('');
+  }
+  const stored = localStorage.getItem('synergy_auth');
+  const valid  = await sha256('ThisIsThePa55word!');
+  if (stored !== valid) window.location.href = '/';
+})();
+
+// ── Synergy system prompt ─────────────────────────────────────────────────────
+const SYNERGY_SYSTEM = `You are writing cold BD outreach emails on behalf of Ruben Davis, co-founder of Synergy Resourcing Solutions (synergy-rec.com).
+
+ABOUT SYNERGY:
+Two founders — Ruben Davis and James Ellis — with 20+ combined years in technical recruitment. Deep roots in East Anglia (Norfolk, Suffolk, Cambridge, Essex, Hertfordshire corridor). Growing national footprint. Based in Ipswich, Suffolk.
+
+Specialisms: Software Development, BI & Data, IT Infrastructure, Project & Change Management, Executive Search, Marketing & Digital.
+
+WHAT ACTUALLY MAKES SYNERGY DIFFERENT:
+- Not a tick-box agency. Proper consultants who embed into the hiring function, understand business objectives, help clients make informed decisions — not just fill specs.
+- They challenge briefs upfront. Most hiring delays are clarity gaps, not talent shortages. Synergy fixes the brief before searching.
+- They provide salary benchmarking, market intelligence, skill availability data — before and during a search.
+- Relationships last beyond placements. Ruben regularly helps clients with internal business cases, benchmark costs, sense-checking.
+- Personal service. You deal with Ruben or James directly.
+
+PROVEN RESULTS (use selectively, only where genuinely relevant — never force them):
+- 24-day average fill time vs 65-day industry standard
+- 97% long-term retention rate
+- 100% success on retained searches
+
+REAL CASE STUDIES (reference the type of work naturally — never name clients in cold emails):
+- Placed a contractor to solve a unique R&D integration problem for a large healthcare/dental supplier — proprietary system, no API, GPhC compliance. Client: "He took the time to properly understand the challenge and explore it with us."
+- Started as one of several agencies for a property security company, refined the brief when requirements changed, became exclusive partner across 6 placements (D365 Developers, QA Engineers, Infrastructure). Client: "He focuses on outcomes, not just CV matching."
+- Replaced a Client Services Director who had been in post 12 years at a Norwich digital agency — filled in 14 working days. Then placed their Software Developer too.
+- Go-to IT recruitment agency for a healthcare services group. Client: "I can trust them to find me the person I am looking for."
+
+VOICE & TONE:
+- Direct, plain English. No corporate padding.
+- Confident but not arrogant. Sounds like a knowledgeable mate who's brilliant at recruitment.
+- Lead with what's in it for them.
+- Back claims with specifics, not adjectives.
+- NEVER say: cutting-edge, best-in-class, world-class, going the extra mile, passionate about recruitment, leverage, synergise, exceed expectations.
+- DO say naturally: "We show up", "Let's be honest", "In our experience", "The reality is", "worth a conversation"
+- Vary the approach — different openers every time. Never the same template twice.
+
+STRICT EMAIL RULES:
+- Under 100 words body only
+- Goal: get a reply. Nothing more.
+- No subject line in body.
+- No contact name = open with "Hi," — never "Dear Hiring Manager"
+- Sign off: "Ruben" on its own line only
+- Only use stats/case studies when they genuinely fit — don't crowbar them in
+- Feel written specifically for this company and role. If it could come from any agency, rewrite it.
+- Never name competitors. Never invent facts. Never promise specific outcomes.
+- No exclamation marks.
+
+AUDIENCE TONE (apply automatically):
+- Founder/MD/Owner: business impact, speed, ROI, direct
+- IT Director/CTO: technical understanding, team fit
+- HR/People team: partnership, quality, retention, aftercare
+- No contact: generic but role-specific
+
+OUTPUT — valid JSON only, no markdown, no preamble:
+{"email":"body here","subject1":"option 1","subject2":"option 2"}`;
+
+// ── Storage keys ──────────────────────────────────────────────────────────────
+const LEADS_KEY   = 'synergy_leads_v4';
+const BLOCKED_KEY = 'synergy_blocked_v4';
+const STATUS_KEY  = 'synergy_status_v4';
+
+function loadJSON(key, fallback) {
+  try { return JSON.parse(localStorage.getItem(key)) || fallback; } catch(e) { return fallback; }
+}
+function saveJSON(key, val) {
+  try { localStorage.setItem(key, JSON.stringify(val)); } catch(e) { console.warn('Storage full', e); } }
+
+// ── Classification ────────────────────────────────────────────────────────────
+const TECH_KW = ['software','engineer','developer','it support','it technician','it coordinator','ict','infrastructure','service desk','helpdesk','data analyst','data engineer','data governance','business intelligence','bi manager','cloud','devops','platform','backend','frontend','full stack','fullstack','mobile','ios','android','php','sql','c++','python','machine learning','ai scientist','robotic','geospatial','application specialist','reporting analyst','network','cyber','delivery manager','technical','technology','eud','dynamics','salesforce','power apps','power platform','qa','test engineer','scrum','product manager','product owner'];
+const MKT_KW  = ['marketing','ecommerce','e-commerce','seo','ppc','paid search','paid social','digital marketing','brand','content','social media','campaign','growth','crm','email marketing','demand generation','communications','acquisition','retention'];
+
+function classify(role) {
+  const r = role.toLowerCase();
+  if (MKT_KW.some(k => r.includes(k))) return 'marketing';
+  if (TECH_KW.some(k => r.includes(k))) return 'tech';
+  return null;
+}
+
+// ── State ─────────────────────────────────────────────────────────────────────
+let leads    = loadJSON(LEADS_KEY, []);
+let blocked  = loadJSON(BLOCKED_KEY, []);
+let statuses = loadJSON(STATUS_KEY, {});
+let generating = {};
+const TODAY  = new Date().toISOString().slice(0, 10);
+
+function getStatus(lead) {
+  if (blocked.includes(lead.company)) return 'blocked';
+  return statuses[lead.id] || 'review';
+}
+
+function isNew(lead) { return lead.firstSeen === TODAY; }
+
+// ── Deduplication key ─────────────────────────────────────────────────────────
+function dedupKey(company, role) {
+  return (company + '||' + role).toLowerCase().replace(/\s+/g, '');
+}
+
+// ── CSV import ────────────────────────────────────────────────────────────────
+document.getElementById('fileInput').addEventListener('change', function(e) {
+  const file = e.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = function(ev) {
+    const lines = ev.target.result.split(/\r?\n/);
+    const rawHeaders = lines[0].split(',');
+    const headers = rawHeaders.map(h => h.trim().replace(/^"|"$/g,'').toLowerCase());
+
+    function get(row, ...keys) {
+      for (const k of keys) {
+        const i = headers.indexOf(k);
+        if (i >= 0 && row[i] !== undefined) {
+          return row[i].trim().replace(/^"|"$/g,'') || null;
+        }
+      }
+      return null;
+    }
+
+    // Build existing dedup set
+    const existing = new Set(leads.map(l => dedupKey(l.company, l.role)));
+
+    let added = 0;
+    const newLeads = [];
+
+    lines.slice(1).forEach((line, idx) => {
+      if (!line.trim()) return;
+      // Handle commas inside quoted fields simply
+      const row = line.match(/(".*?"|[^,]+)(?=,|$)/g) || line.split(',');
+      const company  = get(row, 'company') || '';
+      const role     = get(row, 'positionname', 'role', 'title', 'position name', 'position') || '';
+      if (!company || !role) return;
+
+      const cat = classify(role);
+      if (!cat) return; // not tech or marketing — skip silently
+
+      const key = dedupKey(company, role);
+      if (existing.has(key)) return; // duplicate — skip
+
+      existing.add(key);
+      added++;
+
+      newLeads.push({
+        id:        'l' + Date.now() + '_' + idx,
+        company,
+        role,
+        location:  get(row, 'location') || '',
+        salary:    get(row, 'salary') || null,
+        posted:    get(row, 'posted date', 'posted', 'date') || 'Recent',
+        url:       get(row, 'url') || '',
+        contact:   null,
+        email:     null,
+        linkedin:  null,
+        cat,
+        firstSeen: TODAY,
+      });
+    });
+
+    leads = [...newLeads, ...leads]; // new leads at the top
+    saveJSON(LEADS_KEY, leads);
+
+    const resultEl = document.getElementById('importResult');
+    resultEl.style.display = 'inline-block';
+    if (added > 0) {
+      resultEl.className = 'import-result new';
+      resultEl.textContent = `${added} new lead${added > 1 ? 's' : ''} added`;
+    } else {
+      resultEl.className = 'import-result none';
+      resultEl.textContent = 'No new leads found';
+    }
+    setTimeout(() => resultEl.style.display = 'none', 4000);
+
+    // Auto-filter to new today
+    if (added > 0) document.getElementById('filterStatus').value = 'new';
+    render();
+    e.target.value = ''; // reset file input so same file can be re-imported if needed
+  };
+  reader.readAsText(file);
+});
+
+// ── Email generation ──────────────────────────────────────────────────────────
+async function generateEmail(id) {
+  const lead = leads.find(l => l.id === id);
+  if (!lead) return;
+  const apiKey = document.getElementById('apiKey').value.trim();
+  if (!apiKey) { alert('Paste your Anthropic API key in the header first.'); return; }
+
+  const contactName = lead.contact ? lead.contact.split(',')[0] : null;
+  const salaryLine  = lead.salary ? `Advertised salary: ${lead.salary}` : 'Salary not advertised';
+
+  const userPrompt = `Write a cold BD email for this lead:
+
+Company: ${lead.company}
+Role: ${lead.role}
+Location: ${lead.location || 'Not specified'}
+${salaryLine}
+Contact: ${contactName || 'No named contact — open with Hi,'}
+Discipline: ${lead.cat === 'marketing' ? 'Marketing/Digital' : 'Tech/IT'} recruitment
+
+Under 100 words. Goal is a reply. Sign off as Ruben only. JSON only.`;
+
+  generating[id] = true;
+  statuses[id] = 'chasing';
+  saveJSON(STATUS_KEY, statuses);
+  render();
+
+  try {
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': apiKey,
+        'anthropic-version': '2023-06-01',
+        'anthropic-dangerous-direct-browser-access': 'true'
+      },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 800,
+        system: SYNERGY_SYSTEM,
+        messages: [{ role: 'user', content: userPrompt }]
+      })
+    });
+    const data = await res.json();
+    const raw  = data.content?.[0]?.text || '';
+    const clean = raw.replace(/```json|```/g, '').trim();
+    const parsed = JSON.parse(clean);
+    // Store email temporarily in session (not persisted — lives in Sourcewhale/Bullhorn)
+    sessionEmails[id] = parsed;
+  } catch(e) {
+    sessionEmails[id] = { email: 'Failed to generate — check your API key and try again.', subject1: '', subject2: '' };
+  }
+
+  generating[id] = false;
+  render();
+  setTimeout(() => {
+    const el = document.getElementById('email-' + id);
+    if (el) el.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  }, 100);
+}
+
+// Session-only email storage
+const sessionEmails = {};
+
+function copyEmail(id) {
+  const e = sessionEmails[id];
+  if (!e) return;
+  navigator.clipboard.writeText(e.email + '\n\nRuben').then(() => {
+    const btn = document.getElementById('copy-' + id);
+    if (btn) { btn.textContent = 'Copied!'; setTimeout(() => btn.textContent = 'Copy', 1500); }
+  });
+}
+
+// ── Block / status helpers ────────────────────────────────────────────────────
+function blockCompany(company) {
+  const co = company;
+  if (!blocked.includes(co)) { blocked.push(co); saveJSON(BLOCKED_KEY, blocked); }
+  render();
+}
+
+function unblock(company) {
+  blocked = blocked.filter(b => b !== company);
+  saveJSON(BLOCKED_KEY, blocked);
+  render();
+}
+
+function resetLead(id) {
+  delete statuses[id];
+  delete sessionEmails[id];
+  saveJSON(STATUS_KEY, statuses);
+  render();
+}
+
+function clearAll() {
+  if (!confirm('Clear all lead data? Blocked companies will be kept.')) return;
+  leads = [];
+  statuses = {};
+  saveJSON(LEADS_KEY, leads);
+  saveJSON(STATUS_KEY, statuses);
+  render();
+}
+
+// ── Stats ─────────────────────────────────────────────────────────────────────
+function getStats() {
+  const active = leads.filter(l => getStatus(l) !== 'blocked');
+  return {
+    total:  active.length,
+    newT:   active.filter(l => isNew(l)).length,
+    review: active.filter(l => getStatus(l) === 'review').length,
+    chase:  active.filter(l => getStatus(l) === 'chasing').length,
+    block:  leads.filter(l => getStatus(l) === 'blocked').length,
+  };
+}
+
+// ── Render ────────────────────────────────────────────────────────────────────
+function render() {
+  const fStatus = document.getElementById('filterStatus').value;
+  const fCat    = document.getElementById('filterCat').value;
+  const search  = document.getElementById('search').value.toLowerCase();
+  const s = getStats();
+
+  document.getElementById('sTotal').textContent  = s.total;
+  document.getElementById('sNew').textContent    = s.newT;
+  document.getElementById('sReview').textContent = s.review;
+  document.getElementById('sChase').textContent  = s.chase;
+  document.getElementById('sBlock').textContent  = s.block;
+
+  const oldest = leads.length ? new Date(Math.min(...leads.map(l => new Date(l.firstSeen || TODAY)))).toLocaleDateString('en-GB') : '—';
+  document.getElementById('dbInfo').textContent = leads.length
+    ? `${leads.length} leads stored · oldest from ${oldest} · ${blocked.length} companies blocked`
+    : 'No leads loaded — import a CSV to get started';
+
+  let filtered = leads.filter(l => {
+    const st = getStatus(l);
+    if (fStatus === 'new'    && !(isNew(l) && st !== 'blocked')) return false;
+    if (fStatus === 'review' && st !== 'review') return false;
+    if (fStatus === 'chasing'&& st !== 'chasing') return false;
+    if (fStatus === 'blocked'&& st !== 'blocked') return false;
+    if (fStatus === 'all') {} // show all
+    if (fCat !== 'all' && l.cat !== fCat) return false;
+    if (search && !l.company.toLowerCase().includes(search) && !l.role.toLowerCase().includes(search)) return false;
+    return true;
+  });
+
+  const newLeads  = filtered.filter(l => isNew(l) && getStatus(l) !== 'blocked');
+  const reviewing = filtered.filter(l => !isNew(l) && getStatus(l) === 'review');
+  const chasing   = filtered.filter(l => getStatus(l) === 'chasing');
+  const blk       = filtered.filter(l => getStatus(l) === 'blocked');
+
+  const list = document.getElementById('leadList');
+  list.innerHTML = '';
+
+  function renderGroup(items, label) {
+    if (!items.length) return;
+    const lbl = document.createElement('div');
+    lbl.className = 'section-label';
+    lbl.textContent = label;
+    list.appendChild(lbl);
+    items.forEach(l => list.appendChild(makeCard(l)));
+  }
+
+  if (fStatus === 'all' || fStatus === 'new') {
+    if (fStatus === 'new') {
+      newLeads.forEach(l => list.appendChild(makeCard(l)));
+    } else {
+      renderGroup(newLeads,  `New today — ${newLeads.length}`);
+      renderGroup(reviewing, `Needs review — ${reviewing.length}`);
+      renderGroup(chasing,   `Chasing — ${chasing.length}`);
+      renderGroup(blk,       `Blocked — ${blk.length}`);
+    }
+  } else {
+    filtered.forEach(l => list.appendChild(makeCard(l)));
+  }
+
+  if (!filtered.length) list.innerHTML = '<div class="empty">No leads match — try adjusting your filters or import a CSV.</div>';
+
+  if (s.block > 0 && fStatus === 'all' && !search) {
+    const n = document.createElement('p');
+    n.className = 'blocked-note';
+    n.textContent = `${s.block} company${s.block > 1 ? 's' : ''} permanently blocked.`;
+    list.appendChild(n);
+  }
+}
+
+function makeCard(lead) {
+  const st  = getStatus(lead);
+  const nw  = isNew(lead);
+  const card = document.createElement('div');
+  card.className = 'card' + (st === 'chasing' ? ' chasing' : st === 'blocked' ? ' blocked' : '');
+
+  const catPill  = `<span class="pill ${lead.cat === 'marketing' ? 'pill-mkt' : 'pill-tech'}">${lead.cat}</span>`;
+  const locPill  = lead.location ? `<span class="pill pill-loc">${lead.location}</span>` : '';
+  const salPill  = lead.salary   ? `<span class="pill pill-sal">${lead.salary}</span>` : '';
+  const postPill = `<span class="pill pill-post">${lead.posted}</span>`;
+  const newPill  = nw && st !== 'blocked' ? `<span class="pill pill-new">New today</span>` : '';
+  const blkPill  = st === 'blocked' ? `<span class="pill pill-blk">blocked</span>` : '';
+
+  const contactParts = [];
+  if (lead.contact) contactParts.push(`<span>${lead.contact}</span>`);
+  else contactParts.push(`<span class="contact-none">No contact — needs lookup</span>`);
+  if (lead.email)   contactParts.push(`<a href="mailto:${lead.email}">${lead.email}</a>`);
+  if (lead.linkedin)contactParts.push(`<a href="${lead.linkedin}" target="_blank">LinkedIn ↗</a>`);
+  if (lead.url)     contactParts.push(`<a href="${lead.url}" target="_blank">View job ↗</a>`);
+
+  const eid = CSS.escape(lead.id);
+  let actions = '';
+  if (st === 'review' || (nw && st === 'review')) {
+    actions = `<button class="btn btn-chase" onclick="generateEmail('${lead.id}')">Chase — write email</button>
+               <button class="btn btn-block" onclick="blockCompany(${JSON.stringify(lead.company)})">Block</button>`;
+  } else if (st === 'chasing') {
+    actions = `<button class="btn btn-chase" onclick="generateEmail('${lead.id}')">Regenerate</button>
+               <button class="btn btn-block" onclick="blockCompany(${JSON.stringify(lead.company)})">Block</button>
+               <button class="btn" onclick="resetLead('${lead.id}')">Reset</button>`;
+  } else if (st === 'blocked') {
+    actions = `<button class="btn" onclick="unblock(${JSON.stringify(lead.company)})">Unblock</button>`;
+  }
+
+  let emailHtml = '';
+  if (generating[lead.id]) {
+    emailHtml = `<div class="email-box"><div class="email-header"><span class="email-header-label">Writing email…</span></div><div class="email-generating"><div class="spinner"></div>Generating your Sourcewhale email…</div></div>`;
+  } else if (sessionEmails[lead.id]) {
+    const e = sessionEmails[lead.id];
+    emailHtml = `<div class="email-box" id="email-${lead.id}">
+      <div class="email-header">
+        <span class="email-header-label">Sourcewhale-ready</span>
+        <button class="btn btn-copy" id="copy-${lead.id}" onclick="copyEmail('${lead.id}')">Copy</button>
+      </div>
+      ${e.subject1 ? `<div class="subject-options"><div class="subject-options-label">Subject options:</div><span class="subject-option">${e.subject1}</span><span class="subject-option">${e.subject2}</span></div>` : ''}
+      <div class="email-body-text">${e.email}\n\nRuben</div>
+    </div>`;
+  }
+
+  card.innerHTML = `
+    <div class="card-top">
+      <div><div class="card-company">${lead.company}</div><div class="card-role">${lead.role}</div></div>
+      <div class="card-actions">${actions}</div>
+    </div>
+    <div class="card-meta">${newPill}${catPill}${locPill}${salPill}${postPill}${blkPill}</div>
+    <div class="card-contact">${contactParts.join('')}</div>
+    ${emailHtml}`;
+  return card;
+}
+
+render();
+</script>
+</body>
+</html>

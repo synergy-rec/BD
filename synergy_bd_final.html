@@ -1,0 +1,476 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Synergy BD — Lead Qualifier</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --bg: #f7f6f3; --surface: #ffffff; --surface2: #f0ede8;
+    --border: rgba(0,0,0,0.1); --border-strong: rgba(0,0,0,0.18);
+    --text: #1a1a18; --text2: #6b6860; --text3: #9e9b94;
+    --green: #1a7a52; --green-bg: #e8f5ee;
+    --red: #b83232; --red-bg: #fbebeb;
+    --amber: #8a5c00; --amber-bg: #fdf3dc;
+    --blue: #1a4f8a; --blue-bg: #e8f0fb;
+    --purple: #4a3a8a; --purple-bg: #eeeafb;
+    --radius: 10px; --radius-sm: 6px;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #18181a; --surface: #232325; --surface2: #2c2c2f;
+      --border: rgba(255,255,255,0.08); --border-strong: rgba(255,255,255,0.14);
+      --text: #f0ede8; --text2: #a09d96; --text3: #6b6860;
+      --green: #4ecb8a; --green-bg: #0e2a1c;
+      --red: #e06060; --red-bg: #2a1010;
+      --amber: #f0c060; --amber-bg: #2a2010;
+      --blue: #6aabf0; --blue-bg: #101e2a;
+      --purple: #a090f0; --purple-bg: #1a1630;
+    }
+  }
+  body { font-family: -apple-system, 'Helvetica Neue', Arial, sans-serif; background: var(--bg); color: var(--text); font-size: 14px; line-height: 1.5; min-height: 100vh; }
+  header { background: var(--surface); border-bottom: 1px solid var(--border); padding: 0 24px; display: flex; align-items: center; justify-content: space-between; height: 56px; position: sticky; top: 0; z-index: 100; }
+  .logo { font-size: 15px; font-weight: 600; letter-spacing: -0.02em; }
+  .logo span { color: var(--text3); font-weight: 400; }
+  .api-input { font-size: 12px; padding: 5px 10px; border: 1px solid var(--border-strong); border-radius: var(--radius-sm); background: var(--surface2); color: var(--text); width: 240px; }
+  .api-input::placeholder { color: var(--text3); }
+  main { max-width: 860px; margin: 0 auto; padding: 24px 16px 80px; }
+  .import-bar { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 12px 16px; margin-bottom: 16px; display: flex; align-items: center; gap: 12px; flex-wrap: wrap; font-size: 13px; color: var(--text2); }
+  .toolbar { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 20px; align-items: center; }
+  .toolbar input[type="text"], .toolbar select { font-size: 13px; padding: 7px 11px; border: 1px solid var(--border-strong); border-radius: var(--radius-sm); background: var(--surface); color: var(--text); outline: none; }
+  .toolbar input[type="text"] { width: 200px; }
+  .stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 24px; }
+  .stat { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 14px 16px; }
+  .stat-label { font-size: 11px; color: var(--text3); text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 4px; }
+  .stat-val { font-size: 26px; font-weight: 600; letter-spacing: -0.03em; }
+  .section-label { font-size: 11px; font-weight: 600; color: var(--text3); text-transform: uppercase; letter-spacing: 0.07em; margin: 20px 0 8px; }
+  .lead-list { display: flex; flex-direction: column; gap: 8px; }
+  .card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 14px 16px; transition: border-color 0.15s; }
+  .card:hover { border-color: var(--border-strong); }
+  .card.chasing { border-left: 3px solid var(--green); }
+  .card.blocked { opacity: 0.38; border-left: 3px solid var(--red); }
+  .card-top { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; }
+  .card-company { font-size: 14px; font-weight: 600; letter-spacing: -0.01em; }
+  .card-role { font-size: 13px; color: var(--text2); margin-top: 1px; }
+  .card-actions { display: flex; gap: 5px; flex-shrink: 0; flex-wrap: wrap; justify-content: flex-end; }
+  .btn { font-size: 12px; font-weight: 500; padding: 5px 11px; border-radius: var(--radius-sm); border: 1px solid var(--border-strong); background: transparent; color: var(--text2); cursor: pointer; transition: all 0.12s; white-space: nowrap; }
+  .btn:hover { background: var(--surface2); color: var(--text); }
+  .btn:active { transform: scale(0.97); }
+  .btn-chase { border-color: var(--green); color: var(--green); background: var(--green-bg); }
+  .btn-block { border-color: var(--red); color: var(--red); }
+  .btn-block:hover { background: var(--red-bg); }
+  .btn-copy { border-color: var(--blue); color: var(--blue); font-size: 11px; padding: 3px 8px; }
+  .btn-copy:hover { background: var(--blue-bg); }
+  .card-meta { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 10px; }
+  .pill { font-size: 11px; font-weight: 500; padding: 2px 8px; border-radius: 20px; }
+  .pill-tech { background: var(--purple-bg); color: var(--purple); }
+  .pill-mkt  { background: var(--amber-bg); color: var(--amber); }
+  .pill-loc  { background: var(--blue-bg); color: var(--blue); }
+  .pill-sal  { background: var(--green-bg); color: var(--green); }
+  .pill-post { background: var(--surface2); color: var(--text3); }
+  .pill-blk  { background: var(--red-bg); color: var(--red); }
+  .card-contact { margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--border); font-size: 12px; color: var(--text2); display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+  .card-contact a { color: var(--blue); text-decoration: none; }
+  .card-contact a:hover { text-decoration: underline; }
+  .contact-none { color: var(--text3); font-style: italic; }
+  .email-box { margin-top: 12px; border: 1px solid var(--border); border-radius: var(--radius-sm); overflow: hidden; }
+  .email-header { background: var(--surface2); padding: 8px 12px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border); }
+  .email-header-label { font-size: 11px; font-weight: 600; color: var(--text3); text-transform: uppercase; letter-spacing: 0.06em; }
+  .subject-options { padding: 8px 12px; background: var(--surface); border-bottom: 1px solid var(--border); }
+  .subject-options-label { font-size: 11px; color: var(--text3); margin-bottom: 5px; }
+  .subject-option { font-size: 12px; padding: 3px 8px; border-radius: var(--radius-sm); background: var(--surface2); color: var(--text2); display: inline-block; margin: 2px 4px 2px 0; border: 1px solid var(--border); }
+  .email-body-text { padding: 12px; font-size: 13px; color: var(--text); white-space: pre-wrap; line-height: 1.7; background: var(--surface); }
+  .email-generating { padding: 16px 12px; font-size: 13px; color: var(--text3); display: flex; align-items: center; gap: 8px; background: var(--surface); }
+  .spinner { width: 14px; height: 14px; border: 2px solid var(--border-strong); border-top-color: var(--blue); border-radius: 50%; animation: spin 0.7s linear infinite; flex-shrink: 0; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .empty { text-align: center; padding: 40px; color: var(--text3); font-size: 13px; }
+  .blocked-note { text-align: center; font-size: 12px; color: var(--text3); padding: 12px 0 0; }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">Synergy <span>/ BD Lead Qualifier</span></div>
+  <input class="api-input" type="password" id="apiKey" placeholder="Paste Anthropic API key…" />
+</header>
+
+<main>
+  <div class="import-bar">
+    <label>Import CSV scrape:</label>
+    <input type="file" id="fileInput" accept=".csv" />
+    <span style="font-size:12px;color:var(--text3)">Columns needed: company, positionName (or role), location, salary, posted date, url</span>
+  </div>
+  <div class="toolbar">
+    <input type="text" id="search" placeholder="Search company or role…" oninput="render()" />
+    <select id="filterStatus" onchange="render()">
+      <option value="all">All statuses</option>
+      <option value="review">Needs review</option>
+      <option value="chasing">Chasing</option>
+      <option value="blocked">Blocked</option>
+    </select>
+    <select id="filterCat" onchange="render()">
+      <option value="all">Tech + Marketing</option>
+      <option value="tech">Tech only</option>
+      <option value="marketing">Marketing only</option>
+    </select>
+  </div>
+  <div class="stats">
+    <div class="stat"><div class="stat-label">Qualified</div><div class="stat-val" id="sTotal">—</div></div>
+    <div class="stat"><div class="stat-label">To review</div><div class="stat-val" id="sReview">—</div></div>
+    <div class="stat"><div class="stat-label">Chasing</div><div class="stat-val" id="sChase">—</div></div>
+    <div class="stat"><div class="stat-label">Blocked</div><div class="stat-val" id="sBlock">—</div></div>
+  </div>
+  <div id="leadList" class="lead-list"></div>
+</main>
+
+<script>
+const SYNERGY_SYSTEM = `You are writing cold BD outreach emails on behalf of Ruben Davis, co-founder of Synergy Resourcing Solutions (synergy-rec.com).
+
+ABOUT SYNERGY:
+Two founders — Ruben Davis and James Ellis — with 20+ combined years in technical recruitment. Deep roots in East Anglia (Norfolk, Suffolk, Cambridge, Essex, Hertfordshire corridor). Growing national footprint. Based in Ipswich, Suffolk.
+
+Specialisms: Software Development, BI & Data, IT Infrastructure, Project & Change Management, Executive Search, Marketing & Digital.
+
+WHAT ACTUALLY MAKES SYNERGY DIFFERENT (use this thinking, not these exact words):
+- Not a tick-box agency. Proper consultants who embed into the hiring function, understand business objectives, and help clients make informed decisions — not just fill specs.
+- They challenge briefs upfront. Most hiring delays are clarity gaps, not talent shortages. Synergy fixes the brief before searching.
+- They provide salary benchmarking, market intelligence, skill availability data — before and during a search, not just when asked.
+- Relationships last beyond placements. Ruben regularly helps clients with internal business cases, benchmark costs, sense-checking. He's the person you call for an honest conversation.
+- Personal service. You deal with Ruben or James directly — not a junior resourcing team.
+
+PROVEN RESULTS (use selectively where genuinely relevant — never force them):
+- 24-day average fill time vs 65-day industry standard
+- 97% long-term retention rate  
+- 100% success on retained searches
+
+REAL CASE STUDIES (draw on these naturally when relevant — never name the clients directly in cold emails, reference the type of work):
+- DD Group (dental/healthcare supplier): Placed a contractor to solve a unique R&D integration problem — proprietary system with no API, GPhC compliance requirements, operational criticality. Ruben took time to understand the actual problem, not just the spec. Client quote: "He took the time to properly understand the challenge and explore it with us."
+- VPS (property security company): Started as one agency among several for a D365 consultant role. Took time to understand their evolving needs, refined the brief when requirements changed mid-project. Grew to exclusive partner across multiple departments — 3x D365 Developers, 2x QA Engineers, 1x Infrastructure role, all filled within weeks. Client: "He focuses on the outcomes I'm trying to achieve, rather than just CV to requirement matching."
+- Brandex Group (Norwich digital agency): Replaced a Client Services Director who had been in post 12 years — complex brief, thin East Anglia market. Filled within 14 working days. Then placed a Software Developer too. Client: "A relaxed, no nonsense approach to recruiting which very much suits our business."
+- IPRS Group: Became their go-to agency for IT team vacancies. Client: "They always present great candidates, sometimes difficult choosing between them."
+
+VOICE & TONE — this is critical:
+- Direct, plain English. No corporate padding whatsoever.
+- Sounds like a knowledgeable mate who's brilliant at recruitment — confident but not arrogant.
+- Lead with what's in it for them — their problem, their context.
+- Back any claims with specifics, not adjectives.
+- NEVER say: cutting-edge, best-in-class, world-class, going the extra mile, passionate about recruitment, leverage, synergise, paradigm, exceed expectations, best practice (unless quoting), unique (overused).
+- DO say naturally: "We show up", "Let's be honest", "In our experience", "The reality is", "we know this market", "worth a conversation"
+- Conversational but professional. If you wouldn't say it in a meeting, don't write it.
+- Vary the approach every time — different openers, different angles, never the same template twice.
+
+STRICT EMAIL RULES:
+- Under 100 words (body only, not sign-off)
+- Goal: get a reply to start a conversation. Nothing more.
+- No subject line in the body.
+- If no contact name provided, open with "Hi," — never "Dear Hiring Manager" or similar.
+- Sign off: just "Ruben" on its own line — they have his full sig in their email client.
+- Only use stats/case study references when they genuinely fit the role/company context — don't crowbar them in.
+- Make it feel written specifically for this company and this role. If it could have come from any agency, rewrite it.
+- Never mention competitors by name.
+- Never invent facts about the company or role beyond what you've been given. Stick to what's in the brief.
+- Never promise specific outcomes or timelines you can't guarantee.
+- Never use exclamation marks.
+
+AUDIENCE TONE ADJUSTMENT (apply automatically based on contact type):
+- Founder/MD/Owner: business impact, speed, ROI, direct
+- IT Director/CTO/Head of Engineering: technical understanding, team fit, process
+- HR/Talent/People team: partnership, quality, aftercare, retention
+- No contact info: keep generic but specific to the role type
+
+OUTPUT: Return only valid JSON, no markdown, no preamble:
+{"email": "full email body here", "subject1": "subject option 1", "subject2": "subject option 2"}`;
+
+const BLOCKED_KEY = 'synergy_blocked_v3';
+const STATUS_KEY  = 'synergy_status_v3';
+const EMAIL_KEY   = 'synergy_emails_v3';
+
+function loadJSON(key, fallback) {
+  try { return JSON.parse(localStorage.getItem(key)) || fallback; } catch(e) { return fallback; }
+}
+function saveJSON(key, val) {
+  try { localStorage.setItem(key, JSON.stringify(val)); } catch(e) {}
+}
+
+const TECH_KW = ['software','engineer','developer','it support','it technician','it coordinator','ict','infrastructure','service desk','helpdesk','data analyst','data engineer','data governance','business intelligence','bi manager','cloud','devops','platform','backend','frontend','full stack','fullstack','mobile','ios','android','php','sql','c++','python','machine learning','ai scientist','robotic','geospatial','application specialist','reporting analyst','network','cyber','delivery manager','technical','technology','eud','support technician','dynamics','salesforce','power apps','power platform','qa','test engineer','scrum','product manager','product owner'];
+const MKT_KW  = ['marketing','ecommerce','e-commerce','seo','ppc','paid search','paid social','digital marketing','brand','content','social media','campaign','growth','crm','email marketing','demand generation','communications','acquisition','retention'];
+
+function classify(role) {
+  const r = role.toLowerCase();
+  if (MKT_KW.some(k => r.includes(k))) return 'marketing';
+  if (TECH_KW.some(k => r.includes(k))) return 'tech';
+  return null;
+}
+
+const DEMO_LEADS = [
+  {company:"Cambridge University Press & Assessment",role:"Data Governance Analyst",location:"Cambridge",salary:"£28,800–£37,425",posted:"Today",url:"https://uk.indeed.com/viewjob?jk=098f6428af7e56eb",contact:"Marco Rhobenn Caspillan",email:"marco.caspillan@cambridge.org",linkedin:"https://www.linkedin.com/company/cambridge-university-press"},
+  {company:"Care UK",role:"Business Intelligence Manager",location:"Essex",salary:null,posted:"Today",url:"https://uk.indeed.com/viewjob?jk=cfef4720c85fd95d",contact:null,email:null,linkedin:"https://www.linkedin.com/company/care-uk"},
+  {company:"Drax Group",role:"IT Service Desk Analyst",location:"Ipswich",salary:null,posted:"Today",url:"https://uk.indeed.com/viewjob?jk=dd871f827dceff7f",contact:null,email:"careers@drax.com",linkedin:"https://www.linkedin.com/company/drax-group"},
+  {company:"IQGeo",role:"Senior Software Engineer",location:"Cambridge",salary:null,posted:"Today",url:"https://uk.indeed.com/viewjob?jk=d1c7e94e29b75b30",contact:"David Cottingham, CTO",email:null,linkedin:"https://www.linkedin.com/in/davidcottingham/"},
+  {company:"OpenAsset",role:"Senior Software Engineer AI/ML",location:"Cambridge",salary:null,posted:"Today",url:"https://uk.indeed.com/viewjob?jk=adf96c83731a3b48",contact:"Kate Edery, VP People & Culture",email:null,linkedin:"https://www.linkedin.com/in/kateedery"},
+  {company:"SpeedyBooker",role:"Digital Marketing & Ecommerce Manager",location:"Bury St. Edmunds",salary:"Up to £60,000",posted:"Today",url:"https://uk.indeed.com/viewjob?jk=bc8e16eae71bcbff",contact:null,email:"applications@speedybooker.com",linkedin:"https://www.linkedin.com/company/speedybooker"},
+  {company:"Solus Accident Repair Centres",role:"Software Developer (Microsoft Stack)",location:"Stansted",salary:"£35,000–£50,000",posted:"Today",url:"https://uk.indeed.com/viewjob?jk=2c940055ec46f760",contact:null,email:null,linkedin:"https://www.linkedin.com/company/solus-accident-repair-centres"},
+  {company:"Saffron Building Society",role:"Service Desk Analyst",location:"Saffron Walden",salary:"£23,550–£29,000",posted:"Today",url:"https://uk.indeed.com/viewjob?jk=d6f8be1f0934a2c5",contact:null,email:null,linkedin:"https://www.linkedin.com/company/saffron-building-society"},
+  {company:"ECL",role:"Senior Data Analyst",location:"Chelmsford",salary:"£35,500–£51,813",posted:"Today",url:"https://uk.indeed.com/viewjob?jk=72c6c37057864c16",contact:null,email:null,linkedin:"https://www.linkedin.com/company/ecl"},
+  {company:"IQGeo",role:"Senior Software Engineer - Delivery",location:"Cambridge",salary:null,posted:"Today",url:"https://uk.indeed.com/viewjob?jk=10c38bec644db9e6",contact:"David Cottingham, CTO",email:null,linkedin:"https://www.linkedin.com/in/davidcottingham/"},
+];
+
+let blocked  = loadJSON(BLOCKED_KEY, []);
+let statuses = loadJSON(STATUS_KEY, {});
+let emails   = loadJSON(EMAIL_KEY, {});
+let leads    = [];
+let generating = {};
+
+function initLeads(raw) {
+  const seen = new Set();
+  leads = [];
+  raw.forEach((r, i) => {
+    const key = r.company + '||' + r.role;
+    if (seen.has(key)) return;
+    seen.add(key);
+    const cat = classify(r.role);
+    if (!cat) return;
+    const id = 'l' + i + '_' + r.company.replace(/\W/g,'').slice(0,10);
+    leads.push({ ...r, cat, id });
+  });
+}
+
+function getStatus(lead) {
+  if (blocked.includes(lead.company)) return 'blocked';
+  return statuses[lead.id] || 'review';
+}
+
+async function generateEmail(id) {
+  const lead = leads.find(l => l.id === id);
+  if (!lead) return;
+  const apiKey = document.getElementById('apiKey').value.trim();
+  if (!apiKey) { alert('Paste your Anthropic API key in the header first.'); return; }
+
+  const contactName = lead.contact ? lead.contact.split(',')[0] : null;
+  const salaryLine  = lead.salary ? `Advertised salary: ${lead.salary}` : 'Salary not advertised';
+  const userPrompt  = `Write a cold BD outreach email for this lead:
+
+Company: ${lead.company}
+Role they're hiring for: ${lead.role}
+Location: ${lead.location}
+${salaryLine}
+Contact: ${contactName ? contactName : 'No named contact — open generically with Hi,'}
+Discipline: ${lead.cat === 'marketing' ? 'Marketing/Digital' : 'Tech/IT'} recruitment
+
+Under 100 words. Goal is a reply. Sign off as Ruben only. Return JSON only — no markdown.`;
+
+  generating[id] = true;
+  render();
+
+  try {
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': apiKey,
+        'anthropic-version': '2023-06-01',
+        'anthropic-dangerous-direct-browser-access': 'true'
+      },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 800,
+        system: SYNERGY_SYSTEM,
+        messages: [{ role: 'user', content: userPrompt }]
+      })
+    });
+    const data = await res.json();
+    const raw = data.content?.[0]?.text || '';
+    const clean = raw.replace(/```json|```/g, '').trim();
+    const parsed = JSON.parse(clean);
+    emails[id] = parsed;
+    saveJSON(EMAIL_KEY, emails);
+    statuses[id] = 'chasing';
+    saveJSON(STATUS_KEY, statuses);
+  } catch(e) {
+    emails[id] = { email: 'Failed to generate — check your API key and try again.', subject1: '', subject2: '' };
+  }
+
+  generating[id] = false;
+  render();
+  setTimeout(() => {
+    const el = document.getElementById('email-' + id);
+    if (el) el.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  }, 100);
+}
+
+function blockCompany(company) {
+  if (!blocked.includes(company)) { blocked.push(company); saveJSON(BLOCKED_KEY, blocked); }
+  render();
+}
+
+function unblock(company) {
+  blocked = blocked.filter(b => b !== company);
+  saveJSON(BLOCKED_KEY, blocked);
+  render();
+}
+
+function resetLead(id) {
+  delete statuses[id]; delete emails[id];
+  saveJSON(STATUS_KEY, statuses); saveJSON(EMAIL_KEY, emails);
+  render();
+}
+
+function copyEmail(id) {
+  const e = emails[id];
+  if (!e) return;
+  navigator.clipboard.writeText(e.email + '\n\nRuben').then(() => {
+    const btn = document.getElementById('copy-' + id);
+    if (btn) { btn.textContent = 'Copied!'; setTimeout(() => btn.textContent = 'Copy', 1500); }
+  });
+}
+
+function getStats() {
+  return {
+    total:  leads.filter(l => getStatus(l) !== 'blocked').length,
+    review: leads.filter(l => getStatus(l) === 'review').length,
+    chase:  leads.filter(l => getStatus(l) === 'chasing').length,
+    block:  leads.filter(l => getStatus(l) === 'blocked').length,
+  };
+}
+
+function render() {
+  const fStatus = document.getElementById('filterStatus').value;
+  const fCat    = document.getElementById('filterCat').value;
+  const search  = document.getElementById('search').value.toLowerCase();
+  const s = getStats();
+  document.getElementById('sTotal').textContent  = s.total;
+  document.getElementById('sReview').textContent = s.review;
+  document.getElementById('sChase').textContent  = s.chase;
+  document.getElementById('sBlock').textContent  = s.block;
+
+  let filtered = leads.filter(l => {
+    const st = getStatus(l);
+    if (fStatus !== 'all' && st !== fStatus) return false;
+    if (fCat !== 'all' && l.cat !== fCat) return false;
+    if (search && !l.company.toLowerCase().includes(search) && !l.role.toLowerCase().includes(search)) return false;
+    return true;
+  });
+
+  const reviewing = filtered.filter(l => getStatus(l) === 'review');
+  const chasing   = filtered.filter(l => getStatus(l) === 'chasing');
+  const blk       = filtered.filter(l => getStatus(l) === 'blocked');
+  const list = document.getElementById('leadList');
+  list.innerHTML = '';
+
+  function renderGroup(items, label) {
+    if (!items.length) return;
+    const lbl = document.createElement('div');
+    lbl.className = 'section-label';
+    lbl.textContent = label;
+    list.appendChild(lbl);
+    items.forEach(l => list.appendChild(makeCard(l)));
+  }
+
+  if (fStatus === 'all') {
+    renderGroup(reviewing, `Needs review — ${reviewing.length}`);
+    renderGroup(chasing, `Chasing — ${chasing.length}`);
+    renderGroup(blk, `Blocked — ${blk.length}`);
+  } else {
+    filtered.forEach(l => list.appendChild(makeCard(l)));
+  }
+
+  if (!filtered.length) list.innerHTML = '<div class="empty">No leads match your filters.</div>';
+  if (s.block > 0 && fStatus === 'all' && !search) {
+    const n = document.createElement('p');
+    n.className = 'blocked-note';
+    n.textContent = `${s.block} company${s.block > 1 ? 's' : ''} permanently blocked — won't appear in future scrapes.`;
+    list.appendChild(n);
+  }
+}
+
+function makeCard(lead) {
+  const st = getStatus(lead);
+  const card = document.createElement('div');
+  card.className = 'card' + (st === 'chasing' ? ' chasing' : st === 'blocked' ? ' blocked' : '');
+
+  const catPill  = `<span class="pill ${lead.cat === 'marketing' ? 'pill-mkt' : 'pill-tech'}">${lead.cat}</span>`;
+  const locPill  = `<span class="pill pill-loc">${lead.location}</span>`;
+  const salPill  = lead.salary ? `<span class="pill pill-sal">${lead.salary}</span>` : '';
+  const postPill = `<span class="pill pill-post">${lead.posted}</span>`;
+  const blkPill  = st === 'blocked' ? `<span class="pill pill-blk">blocked</span>` : '';
+
+  const contactParts = [];
+  if (lead.contact) contactParts.push(`<span>${lead.contact}</span>`);
+  else contactParts.push(`<span class="contact-none">No contact — needs lookup</span>`);
+  if (lead.email)   contactParts.push(`<a href="mailto:${lead.email}">${lead.email}</a>`);
+  if (lead.linkedin) contactParts.push(`<a href="${lead.linkedin}" target="_blank">LinkedIn ↗</a>`);
+  contactParts.push(`<a href="${lead.url}" target="_blank">View job ↗</a>`);
+
+  const eid = lead.id.replace(/'/g, '');
+  let actions = '';
+  if (st === 'review') {
+    actions = `<button class="btn btn-chase" onclick="generateEmail('${eid}')">Chase — generate email</button>
+               <button class="btn btn-block" onclick="blockCompany('${lead.company.replace(/'/g, "\\'")}')">Block company</button>`;
+  } else if (st === 'chasing') {
+    actions = `<button class="btn btn-block" onclick="blockCompany('${lead.company.replace(/'/g, "\\'")}')">Block</button>
+               <button class="btn" onclick="resetLead('${eid}')">Reset</button>`;
+  } else {
+    actions = `<button class="btn" onclick="unblock('${lead.company.replace(/'/g, "\\'")}')">Unblock</button>`;
+  }
+
+  let emailHtml = '';
+  if (generating[lead.id]) {
+    emailHtml = `<div class="email-box"><div class="email-header"><span class="email-header-label">Generating…</span></div><div class="email-generating"><div class="spinner"></div>Writing your email…</div></div>`;
+  } else if (emails[lead.id]) {
+    const e = emails[lead.id];
+    emailHtml = `<div class="email-box" id="email-${eid}">
+      <div class="email-header">
+        <span class="email-header-label">Sourcewhale-ready email</span>
+        <button class="btn btn-copy" id="copy-${eid}" onclick="copyEmail('${eid}')">Copy</button>
+      </div>
+      ${e.subject1 ? `<div class="subject-options"><div class="subject-options-label">Subject line options:</div><span class="subject-option">${e.subject1}</span><span class="subject-option">${e.subject2}</span></div>` : ''}
+      <div class="email-body-text">${e.email}\n\nRuben</div>
+    </div>`;
+  }
+
+  card.innerHTML = `
+    <div class="card-top"><div><div class="card-company">${lead.company}</div><div class="card-role">${lead.role}</div></div><div class="card-actions">${actions}</div></div>
+    <div class="card-meta">${catPill}${locPill}${salPill}${postPill}${blkPill}</div>
+    <div class="card-contact">${contactParts.join('')}</div>
+    ${emailHtml}`;
+  return card;
+}
+
+document.getElementById('fileInput').addEventListener('change', function(e) {
+  const file = e.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = function(ev) {
+    const lines = ev.target.result.split('\n');
+    const headers = lines[0].split(',').map(h => h.trim().replace(/^"|"$/g,'').toLowerCase());
+    const get = (row, ...keys) => {
+      for (const k of keys) {
+        const i = headers.indexOf(k);
+        if (i >= 0 && row[i]) return row[i].trim().replace(/^"|"$/g,'');
+      }
+      return null;
+    };
+    const parsed = lines.slice(1).filter(l => l.trim()).map(line => {
+      const row = line.split(',');
+      return {
+        company:  get(row, 'company') || '',
+        role:     get(row, 'positionname', 'role', 'title', 'position') || '',
+        location: get(row, 'location') || '',
+        salary:   get(row, 'salary') || null,
+        posted:   get(row, 'posted date', 'posted', 'date') || 'Today',
+        url:      get(row, 'url') || '',
+        contact: null, email: null, linkedin: null
+      };
+    }).filter(r => r.company && r.role);
+    initLeads(parsed);
+    render();
+  };
+  reader.readAsText(file);
+});
+
+initLeads(DEMO_LEADS);
+render();
+</script>
+</body>
+</html>

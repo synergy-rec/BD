@@ -350,9 +350,17 @@ async function generateEmail(id){
       body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:800,system:SYSTEM,messages:[{role:'user',content:prompt}]})
     });
     const data=await res.json();
-    const raw=(data.content?.[0]?.text||'').replace(/```json|```/g,'').trim();
-    sessionEmails[id]=JSON.parse(raw);
-  }catch(e){sessionEmails[id]={email:'Failed — check your API key and try again.',subject1:'',subject2:''};}
+    if(data.error){
+      sessionEmails[id]={email:'API error ('+data.error.type+'): '+data.error.message,subject1:'',subject2:''};
+    } else {
+      const raw=(data.content?.[0]?.text||'').replace(/```json|```/g,'').trim();
+      try{ sessionEmails[id]=JSON.parse(raw); }
+      catch(pe){ sessionEmails[id]={email:'Parse error: '+raw.slice(0,300),subject1:'',subject2:''}; }
+    }
+  }catch(e){
+    sessionEmails[id]={email:'Network error: '+e.message,subject1:'',subject2:''};
+  }
+  generating[id]=false;render();
   generating[id]=false;render();
   setTimeout(()=>{const el=document.getElementById('email-'+id);if(el)el.scrollIntoView({behavior:'smooth',block:'nearest'});},100);
 }
@@ -442,9 +450,10 @@ function makeCard(lead){
   if(lead.url)contactParts.push(`<a href="${lead.url}" target="_blank">View job ↗</a>`);
 
   let actions='';
-  if(st==='review')actions=`<button class="btn btn-chase" onclick="generateEmail('${id}')">Chase — write email</button><button class="btn btn-block" onclick="blockCompany(${JSON.stringify(lead.company)})">Block</button>`;
-  else if(st==='chasing')actions=`<button class="btn btn-chase" onclick="generateEmail('${id}')">Regenerate</button><button class="btn btn-block" onclick="blockCompany(${JSON.stringify(lead.company)})">Block</button><button class="btn" onclick="resetLead('${id}')">Reset</button>`;
-  else actions=`<button class="btn" onclick="unblock(${JSON.stringify(lead.company)})">Unblock</button>`;
+  const safeId=id.replace(/'/g,"\\'");
+  if(st==='review')actions=`<button class="btn btn-chase" onclick="generateEmail('${safeId}')">Chase — write email</button><button class="btn btn-block" data-co="${lead.company.replace(/"/g,'&quot;')}" onclick="blockCompany(this.dataset.co)">Block</button>`;
+  else if(st==='chasing')actions=`<button class="btn btn-chase" onclick="generateEmail('${safeId}')">Regenerate</button><button class="btn btn-block" data-co="${lead.company.replace(/"/g,'&quot;')}" onclick="blockCompany(this.dataset.co)">Block</button><button class="btn" onclick="resetLead('${safeId}')">Reset</button>`;
+  else actions=`<button class="btn" data-co="${lead.company.replace(/"/g,'&quot;')}" onclick="unblock(this.dataset.co)">Unblock</button>`;
 
   let emailHtml='';
   if(generating[id])emailHtml=`<div class="email-box"><div class="email-head"><span class="email-head-lbl">Writing email…</span></div><div class="email-gen"><div class="spinner"></div>Generating your Sourcewhale email…</div></div>`;

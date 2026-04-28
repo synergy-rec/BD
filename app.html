@@ -52,6 +52,10 @@
   .stat-label{font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.07em;margin-bottom:2px;}
   .stat-val{font-size:22px;font-weight:600;letter-spacing:-.03em;}
   .stat-val.hi{color:var(--new);}
+  .stat-btn{cursor:pointer;transition:border-color .15s,background .15s;}
+  .stat-btn:hover{border-color:var(--border-strong);background:var(--surface2);}
+  .stat-btn.active{border-color:var(--blue);background:var(--blue-bg);}
+  .stat-btn.active .stat-label{color:var(--blue);}
   .section-label{font-size:11px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.07em;margin:14px 0 6px;}
   .lead-list{display:flex;flex-direction:column;gap:6px;}
   .card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);overflow:hidden;transition:border-color .15s;}
@@ -71,12 +75,16 @@
   .pill-sal{background:var(--green-bg);color:var(--green);}
   .pill-post{background:var(--surface2);color:var(--text3);}
   .pill-blk{background:var(--red-bg);color:var(--red);}
+  .pill-contact{background:#fef3c7;color:#92400e;}
+  @media(prefers-color-scheme:dark){.pill-contact{background:#2a1f00;color:#f0c060;}}
   .pill-new{background:var(--new-bg);color:var(--new);font-weight:700;}
   .card-summary{font-size:12px;color:var(--text2);padding:8px 14px 10px;border-top:1px solid var(--border);line-height:1.55;}
   .card-contact{font-size:12px;color:var(--text2);padding:8px 14px 11px;border-top:1px solid var(--border);display:flex;flex-wrap:wrap;gap:10px;align-items:center;}
   .card-contact a{color:var(--blue);text-decoration:none;}
   .card-contact a:hover{text-decoration:underline;}
   .contact-none{color:var(--text3);font-style:italic;}
+  .contact-search{color:var(--blue);text-decoration:none;font-style:italic;}
+  .contact-search:hover{text-decoration:underline;}
   .btn{font-size:12px;font-weight:500;padding:5px 10px;border-radius:var(--rs);border:1px solid var(--border-strong);background:transparent;color:var(--text2);cursor:pointer;transition:all .12s;white-space:nowrap;}
   .btn:hover{background:var(--surface2);color:var(--text);}
   .btn:active{transform:scale(.97);}
@@ -131,11 +139,11 @@
     </select>
   </div>
   <div class="stats">
-    <div class="stat"><div class="stat-label">Total</div><div class="stat-val" id="sTotal">—</div></div>
-    <div class="stat"><div class="stat-label">New today</div><div class="stat-val hi" id="sNew">—</div></div>
-    <div class="stat"><div class="stat-label">To review</div><div class="stat-val" id="sReview">—</div></div>
-    <div class="stat"><div class="stat-label">Chasing</div><div class="stat-val" id="sChase">—</div></div>
-    <div class="stat"><div class="stat-label">Blocked</div><div class="stat-val" id="sBlock">—</div></div>
+    <div class="stat stat-btn" onclick="setFilter('all')" id="btn-all"><div class="stat-label">Total</div><div class="stat-val" id="sTotal">—</div></div>
+    <div class="stat stat-btn" onclick="setFilter('new')" id="btn-new"><div class="stat-label">New today</div><div class="stat-val hi" id="sNew">—</div></div>
+    <div class="stat stat-btn" onclick="setFilter('review')" id="btn-review"><div class="stat-label">To review</div><div class="stat-val" id="sReview">—</div></div>
+    <div class="stat stat-btn" onclick="setFilter('chasing')" id="btn-chasing"><div class="stat-label">Chasing</div><div class="stat-val" id="sChase">—</div></div>
+    <div class="stat stat-btn" onclick="setFilter('blocked')" id="btn-blocked"><div class="stat-label">Blocked</div><div class="stat-val" id="sBlock">—</div></div>
   </div>
   <div id="leadList" class="lead-list"></div>
 </main>
@@ -175,10 +183,13 @@ REAL CASE STUDIES (reference type of work naturally — never name clients):
 
 VOICE:
 - Direct, plain English. No corporate padding. Confident, not arrogant.
-- Lead with what's in it for them. Back claims with specifics.
-- NEVER: cutting-edge, best-in-class, going the extra mile, passionate about recruitment, leverage, synergise.
+- Lead with something specific to THIS role and THIS company — drawn from the role context provided.
+- NEVER open with flattery about the company ("impressive scale", "great business", "exciting opportunity") — this sounds like every other agency email and will be ignored.
+- NEVER make generic observations about the role type that don't tie directly back to something in the advert — if the advert mentions a specific skill, challenge, or requirement, use it; if it doesn't, don't invent context.
+- Back claims with specifics — real numbers, real outcomes.
+- NEVER: cutting-edge, best-in-class, going the extra mile, passionate about recruitment, leverage, synergise, "most agencies..."
 - Vary the approach every time — different openers, never the same template twice.
-- If it could have come from any agency, rewrite it.
+- If it could have come from any agency about any role, rewrite it entirely.
 
 EMAIL RULES:
 - STRICT 80 words maximum for the body — count them, cut ruthlessly
@@ -345,7 +356,7 @@ async function generateEmail(id){
   const apiKey=document.getElementById('apiKey').value.trim();
   if(!apiKey){alert('Paste your Anthropic API key in the header first.');return;}
   const contactName=lead.contact?lead.contact.split(',')[0]:null;
-  const prompt=`Write a cold BD email for this lead:\n\nCompany: ${lead.company}\nRole: ${lead.role}\nLocation: ${lead.location||'East Anglia'}\nSalary: ${lead.salary||'Not advertised'}\nContact: ${contactName||'No named contact — open with Hi,'}\nDiscipline: ${lead.cat==='marketing'?'Marketing/Digital':'Tech/IT'}${lead.summary?'\nRole context: '+lead.summary:''}\n\nUnder 100 words. Goal: a reply. Sign off Ruben only. JSON only.`;
+  const prompt=`Write a cold BD email for this lead:\n\nCompany: ${lead.company}\nRole: ${lead.role}\nLocation: ${lead.location||'East Anglia'}\nSalary: ${lead.salary||'Not advertised'}\nContact: ${contactName||'No named contact — open with Hi,'}\nDiscipline: ${lead.cat==='marketing'?'Marketing/Digital':'Tech/IT'}${lead.summary?'\nRole context (use this to make the email specific — reference actual details from it): '+lead.summary:''}\n\nIMPORTANT: The email must reference something specific from the role context above. Do not open with flattery about the company. Do not make generic observations about the role type. Tie every point back to what this company has actually said in their advert.\n\nStrict 80 word max body. Goal: a reply. Do not include sign-off. JSON only.`;
 
   generating[id]=true;statuses[id]='chasing';save(STATUS_KEY,statuses);render();
   try{
@@ -378,6 +389,13 @@ function copyEmail(id){
   });
 }
 
+function setFilter(val){
+  document.getElementById('filterStatus').value=val;
+  document.querySelectorAll('.stat-btn').forEach(b=>b.classList.remove('active'));
+  const map={'all':'btn-all','new':'btn-new','review':'btn-review','chasing':'btn-chasing','blocked':'btn-blocked'};
+  if(map[val])document.getElementById(map[val]).classList.add('active');
+  render();
+}
 const blockCompany=co=>{if(!blocked.includes(co)){blocked.push(co);save(BLOCKED_KEY,blocked);}render();};
 const unblock=co=>{blocked=blocked.filter(b=>b!==co);save(BLOCKED_KEY,blocked);render();};
 const resetLead=id=>{delete statuses[id];delete sessionEmails[id];save(STATUS_KEY,statuses);render();};
@@ -391,6 +409,9 @@ function getStats(){
 
 function render(){
   const fSt=document.getElementById('filterStatus').value;
+  document.querySelectorAll('.stat-btn').forEach(b=>b.classList.remove('active'));
+  const map={'all':'btn-all','new':'btn-new','review':'btn-review','chasing':'btn-chasing','blocked':'btn-blocked'};
+  if(map[fSt])document.getElementById(map[fSt]).classList.add('active');
   const fCat=document.getElementById('filterCat').value;
   const srch=document.getElementById('search').value.toLowerCase();
   const s=getStats();
@@ -438,6 +459,8 @@ function makeCard(lead){
   const card=document.createElement('div');
   card.className='card'+(st==='chasing'?' chasing':st==='blocked'?' blocked':'');
 
+  // Check if another role from same company is already being chased
+  const alreadyChasing=st!=='chasing'&&leads.some(l=>l.company===lead.company&&l.id!==lead.id&&getStatus(l)==='chasing');
   const pills=[
     nw&&st!=='blocked'?`<span class="pill pill-new">New today</span>`:'',
     `<span class="pill ${lead.cat==='marketing'?'pill-mkt':'pill-tech'}">${lead.cat}</span>`,
@@ -445,13 +468,17 @@ function makeCard(lead){
     lead.salary?`<span class="pill pill-sal">${lead.salary}</span>`:'',
     lead.posted?`<span class="pill pill-post">${lead.posted}</span>`:'',
     st==='blocked'?`<span class="pill pill-blk">blocked</span>`:'',
+    alreadyChasing?`<span class="pill pill-contact" title="You're already chasing another role at this company">Already chasing</span>`:'',
   ].join('');
 
   const contactParts=[];
+  const liSearchURL='https://www.linkedin.com/search/results/people/?keywords='+encodeURIComponent(lead.company+' '+lead.role.split(' ').slice(-2).join(' '))+'&origin=GLOBAL_SEARCH_HEADER';
+  const coSearchURL='https://www.linkedin.com/search/results/companies/?keywords='+encodeURIComponent(lead.company);
   if(lead.contact)contactParts.push(`<span>${lead.contact}</span>`);
-  else contactParts.push(`<span class="contact-none">No contact — find on LinkedIn</span>`);
+  else contactParts.push(`<a class="contact-search" href="${liSearchURL}" target="_blank" title="Search LinkedIn for contact">No contact — search LinkedIn ↗</a>`);
   if(lead.email)contactParts.push(`<a href="mailto:${lead.email}">${lead.email}</a>`);
   if(lead.linkedin)contactParts.push(`<a href="${lead.linkedin}" target="_blank">LinkedIn ↗</a>`);
+  else contactParts.push(`<a href="${coSearchURL}" target="_blank" style="color:var(--text3);font-size:11px;">Company on LinkedIn ↗</a>`);
   if(lead.url)contactParts.push(`<a href="${lead.url}" target="_blank">View job ↗</a>`);
 
   let actions='';

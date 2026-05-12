@@ -193,16 +193,17 @@ VOICE:
 
 EMAIL RULES:
 - STRICT 80 words maximum for the body — count them, cut ruthlessly
-- Goal: get a reply. One ask only, at the end.
-- No name = open "Hi," never "Dear Hiring Manager"
-- Do NOT include a sign-off or name at the end — the app adds "Ruben" automatically
+- Goal: open a conversation. One ask only, at the end.
+- Open with "Hello" if no contact name, never "Dear Hiring Manager"
+- Do NOT include a sign-off — the app adds "Thanks" then "Ruben" automatically
 - Use ONE stat or case study reference at most — only if it genuinely fits
 - No exclamation marks. No invented facts. No competitor names.
 - Never say "based in Ipswich" — say "we work across East Anglia" or similar if location relevant
 - Don't over-explain Synergy's process — show don't tell
 - Don't use "Most agencies..." constructions — too try-hard
-- Don't use "Most agencies..." constructions — too try-hard
-- End with a low-friction ask — a question or offer, not a push for a call
+- Default closing question unless something more specific fits naturally: "Are you finding the right calibre coming through, or is it proving trickier than expected?"
+- This is Email 1 of 10 in a Sourcewhale sequence — it just needs to open the conversation, not do everything
+- Subject line is always handled by Sourcewhale — do not include one in your output
 
 AUDIENCE (auto-apply):
 - Founder/MD: business impact, speed, ROI
@@ -383,7 +384,7 @@ async function generateEmail(id){
 
 function copyEmail(id){
   const e=sessionEmails[id];if(!e)return;
-  navigator.clipboard.writeText(e.email+'\n\nRuben').then(()=>{
+  navigator.clipboard.writeText(e.email+'\n\nThanks\nRuben').then(()=>{
     const btn=document.getElementById('copy-'+id);
     if(btn){btn.textContent='Copied!';setTimeout(()=>btn.textContent='Copy',1500);}
   });
